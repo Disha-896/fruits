@@ -1,0 +1,215 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Fruit Market</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background-color: #f4f4f4;
+      margin: 0;
+      padding: 0;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+    }
+    .container {
+      background-color: #fff;
+      padding: 20px;
+      border-radius: 8px;
+      width: 400px;
+      box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+    }
+    input, button {
+      width: 100%;
+      padding: 10px;
+      margin: 10px 0;
+      border-radius: 4px;
+      border: 1px solid #ccc;
+    }
+    button {
+      background-color: #4CAF50;
+      color: white;
+      cursor: pointer;
+    }
+    button:hover {
+      background-color: #45a049;
+    }
+    .exit-btn {
+      background-color: #e53935;
+    }
+    .exit-btn:hover {
+      background-color: #d32f2f;
+    }
+    .order-summary {
+      background-color: #f9f9f9;
+      padding: 10px;
+      margin-top: 20px;
+      border-radius: 5px;
+    }
+    .fruit-item {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin: 10px 0;
+    }
+    .btn-group {
+      display: flex;
+      gap: 10px;
+    }
+  </style>
+</head>
+<body>
+
+  <div class="container" id="app">
+    <!-- Login Section -->
+    <div id="login-section">
+      <h2>Seller Login</h2>
+      <input type="text" id="username" placeholder="Enter username" />
+      <input type="password" id="password" placeholder="Enter password" />
+      <button onclick="handleLogin()">Login</button>
+    </div>
+
+    <!-- Main Section -->
+    <div id="main-section" style="display: none;">
+      <h2>Welcome, <span id="seller-name-display"></span>!</h2>
+
+      <h3>Check Fruit Availability</h3>
+      <input type="text" id="fruit-search" placeholder="Enter fruit name" oninput="checkAvailability()" />
+      <p id="fruit-availability"></p>
+
+      <h3>Create Order</h3>
+      <div id="fruit-list"></div>
+
+      <div id="order-summary" class="order-summary" style="display: none;">
+        <h4>Order Summary</h4>
+        <ul id="order-list"></ul>
+        <p><strong>Total: $<span id="total-price">0</span></strong></p>
+        <div class="btn-group">
+          <button onclick="submitOrder()">Submit Order</button>
+          <button class="exit-btn" onclick="exitApp()">Exit</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const fruitList = [
+      { name: 'Apple', price: 2 },
+      { name: 'Banana', price: 1 },
+      { name: 'Orange', price: 1.5 },
+      { name: 'Grapes', price: 2.5 },
+      { name: 'Mango', price: 3 },
+      { name: 'Pineapple', price: 2.2 },
+      { name: 'Peach', price: 2 },
+      { name: 'Strawberry', price: 2.8 },
+      { name: 'Blueberry', price: 3.2 },
+      { name: 'Watermelon', price: 4 }
+    ];
+
+    const sellers = [
+      { username: 'disha', password: '1234' }
+    ];
+
+    let currentSeller = null;
+    let order = [];
+
+    function handleLogin() {
+      const username = document.getElementById('username').value.trim().toLowerCase();
+      const password = document.getElementById('password').value;
+
+      const seller = sellers.find(s => s.username === username && s.password === password);
+
+      if (seller) {
+        currentSeller = seller;
+        document.getElementById('seller-name-display').textContent = username.charAt(0).toUpperCase() + username.slice(1);
+        document.getElementById('login-section').style.display = 'none';
+        document.getElementById('main-section').style.display = 'block';
+        displayFruitList();
+      } else {
+        alert("Invalid username or password");
+      }
+    }
+
+    function displayFruitList() {
+      const container = document.getElementById('fruit-list');
+      container.innerHTML = '';
+      fruitList.forEach(fruit => {
+        const div = document.createElement('div');
+        div.className = 'fruit-item';
+        div.innerHTML = `
+          <span>${fruit.name} - $${fruit.price.toFixed(2)}</span>
+          <input type="number" id="qty-${fruit.name}" placeholder="Qty" min="0" style="width:60px;" onchange="addToOrder('${fruit.name}')" />
+        `;
+        container.appendChild(div);
+      });
+    }
+
+    function addToOrder(fruitName) {
+      const qty = parseInt(document.getElementById(`qty-${fruitName}`).value);
+      const fruit = fruitList.find(f => f.name === fruitName);
+      const index = order.findIndex(item => item.name === fruitName);
+
+      if (!fruit || isNaN(qty) || qty <= 0) return;
+
+      if (index > -1) {
+        order[index].quantity = qty;
+      } else {
+        order.push({ ...fruit, quantity: qty });
+      }
+
+      updateOrderSummary();
+    }
+
+    function updateOrderSummary() {
+      const list = document.getElementById('order-list');
+      const total = document.getElementById('total-price');
+      list.innerHTML = '';
+      let sum = 0;
+
+      order.forEach(item => {
+        const li = document.createElement('li');
+        li.textContent = `${item.quantity} x ${item.name} = $${(item.quantity * item.price).toFixed(2)}`;
+        list.appendChild(li);
+        sum += item.quantity * item.price;
+      });
+
+      total.textContent = sum.toFixed(2);
+      document.getElementById('order-summary').style.display = order.length > 0 ? 'block' : 'none';
+    }
+
+    function checkAvailability() {
+      const query = document.getElementById('fruit-search').value.toLowerCase();
+      const fruit = fruitList.find(f => f.name.toLowerCase() === query);
+      const result = document.getElementById('fruit-availability');
+      result.textContent = fruit ? `Available: $${fruit.price.toFixed(2)}` : "Fruit not found";
+    }
+
+    function submitOrder() {
+  if (order.length > 0) {
+    alert("Order submitted successfully!");
+    exitApp(); // Log out and return to login page
+  } else {
+    alert("No items in order.");
+  }
+}
+
+    function exitApp() {
+      // Reset everything
+      currentSeller = null;
+      order = [];
+      document.getElementById('username').value = '';
+      document.getElementById('password').value = '';
+      document.getElementById('fruit-search').value = '';
+      document.getElementById('fruit-availability').textContent = '';
+      document.getElementById('main-section').style.display = 'none';
+      document.getElementById('login-section').style.display = 'block';
+    }
+  </script>
+
+</body>
+</html>
+
+
